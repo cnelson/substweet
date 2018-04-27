@@ -34,7 +34,7 @@ def _run(cmd):
     )
 
     if result.returncode > 0:
-        print(Style.BRIGHT+Fore.YELLOW+str(cmd)+Style.RESET_ALL)
+        print(Style.BRIGHT+Fore.WHITE+str(cmd)+Style.RESET_ALL)
         print(
             Style.BRIGHT+Fore.RED+result.stderr.decode('utf-8')+Style.RESET_ALL
         )
@@ -132,7 +132,17 @@ def winhax(s):
     return s
 
 
-def make_gif(video, subtitles, start, end, ffmpeg, max_size=5e+6):
+def make_gif(
+    video,
+    subtitles,
+    start,
+    end,
+    ffmpeg,
+    fps=10,
+    width=506,
+    height=-1,
+    max_size=4.7e+6
+):
     """Generate a GIF w/ subtitles from a video.
 
     Args:
@@ -141,6 +151,9 @@ def make_gif(video, subtitles, start, end, ffmpeg, max_size=5e+6):
         start (str): the start timestamp of the gif (passed to ffmpeg -ss)
         end (str): The end timestamp of the gif (passed to ffmpeg -to)
         ffmpeg (str): The path to the ffmpeg binary
+        fps (int): The frames per second of the gif
+        width (int): The width of the gif in pixels (-1 to autoscale)
+        height (int): the height of the gif in pixels (-1 to autoscale)
         max_size (int): The maxmimum size of the gif.
           end will be reduced as neccessary to fit size
 
@@ -153,6 +166,12 @@ def make_gif(video, subtitles, start, end, ffmpeg, max_size=5e+6):
     fh, tmppal = tempfile.mkstemp(suffix='.png')
     os.close(fh)
 
+    opts = 'fps={},scale={}:{}:flags=lanczos'.format(
+        fps,
+        width,
+        height
+    )
+
     try:
         # chop out the part of the srt we we want
         _run([ffmpeg, '-ss', start, '-to', end, '-i', subtitles, '-y', tmpsrt])
@@ -164,8 +183,7 @@ def make_gif(video, subtitles, start, end, ffmpeg, max_size=5e+6):
             '-to', end,
             '-i', video,
             '-vf',
-            'subtitles='+winhax(tmpsrt)+',fps=10,scale=506:-1:flags=lanczos'
-            ',palettegen',
+            'subtitles='+winhax(tmpsrt)+','+opts+',palettegen',
             '-y', tmppal
         ])
 
@@ -176,8 +194,8 @@ def make_gif(video, subtitles, start, end, ffmpeg, max_size=5e+6):
             '-to', end,
             '-i', video,
             '-i', tmppal,
-            '-lavfi', 'subtitles='+winhax(tmpsrt)+',fps=10,scale=506:-1:'
-            'flags=lanczos [x]; [x][1:v] paletteuse',
+            '-lavfi', 'subtitles='+winhax(tmpsrt)+','+opts+' [x]; '
+            '[x][1:v] paletteuse',
             '-f', 'gif',
             '-fs', '{:.0f}'.format(max_size),
             '-'
@@ -244,6 +262,11 @@ def main(args, stdin):
 
             Did you set a manual --delay?  It's probably too short.
 
+         This stupid app skipped part of my video, why!?
+
+            This app only makes gives for parts of the video
+            that are subtitled. parts without subtitles will be skipped.
+
         ''')
     )
 
@@ -293,6 +316,27 @@ def main(args, stdin):
     )
 
     parser.add_argument(
+        '--fps',
+        default=10,
+        type=int,
+        help='The fps of the GIFs'
+    )
+
+    parser.add_argument(
+        '--width',
+        default=506,
+        type=int,
+        help='The width of GIFs in pixels.  Set to -1 to autoscale'
+    )
+
+    parser.add_argument(
+        '--height',
+        default=-1,
+        type=int,
+        help='The height of GIFs in pixels.  Set to -1 to autoscale'
+    )
+
+    parser.add_argument(
         '--ffmpeg',
         '-f',
         default='ffmpeg',
@@ -311,7 +355,6 @@ def main(args, stdin):
             )
         ck, cs, atk, ats = stdin.readline().strip().split(' ')
 
-        print(ck, cs, atk, ats)
         # ffmpeg ok?
         check_ffmpeg(args.ffmpeg)
 
@@ -377,7 +420,7 @@ def main(args, stdin):
 
         print(
             '{style.BRIGHT}{fore.CYAN}[{fore.WHITE}{id}: '
-            '{fore.GREEN}{start} {fore.WHITE}- {fore.RED}{end}'
+            '{fore.YELLOW}{start} - {end}'
             '{fore.CYAN}]\n{style.RESET_ALL}{indent}'.format(
                 fore=Fore,
                 style=Style,
@@ -391,7 +434,10 @@ def main(args, stdin):
             tmpcap,
             caption['start'],
             caption['end'],
-            args.ffmpeg
+            args.ffmpeg,
+            fps=args.fps,
+            width=args.width,
+            height=args.height
         )
 
         # twitter library expects 'file like objects'
@@ -414,7 +460,7 @@ def main(args, stdin):
                   '/status/{tweet.id}'.format(tweet=resp)
         except twitter.error.TwitterError as exc:
             color = Fore.RED
-            msg = 'Twitter error: {message} ({code})'.format(**exc.message[0])
+            msg = 'Twitter error: {}'.format(exc)
 
         print(
             '{style.BRIGHT}{fore.CYAN}['
@@ -443,8 +489,12 @@ def main(args, stdin):
         args.state.close()
 
 
-if __name__ == '__main__':
+def entrypoint():
     main(
         sys.argv[1:],
         sys.stdin
     )
+
+
+if __name__ == '__main__':
+    entrypoint()
