@@ -264,7 +264,7 @@ def main(args, stdin):
 
          This stupid app skipped part of my video, why!?
 
-            This app only makes gives for parts of the video
+            This app only makes gifs for parts of the video
             that are subtitled. parts without subtitles will be skipped.
 
         ''')
