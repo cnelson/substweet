@@ -17,8 +17,9 @@ pip install https://github.com/cnelson/substweet/archive/master.zip
 
 # USAGE
 ```
+
 usage: substweet [-h] [--delay DELAY] [--thread] [--num NUM] [--state STATE]
-               [--ffmpeg FFMPEG]
+               [--fps FPS] [--width WIDTH] [--height HEIGHT] [--ffmpeg FFMPEG]
                video [subtitles]
 
 Post GIFs of a video with subtitles to twitter.
@@ -70,6 +71,11 @@ Twitter is yelling at me about rate limits, why?
 
     Did you set a manual --delay?  It's probably too short.
 
+ This stupid app skipped part of my video, why!?
+
+    This app only makes gives for parts of the video
+    that are subtitled. parts without subtitles will be skipped.
+
 positional arguments:
   video                 The video file to post
   subtitles             The subtitles file (optional, if not specified the
@@ -87,6 +93,10 @@ optional arguments:
   --state STATE         Read/write state information from this file. If state
                         information exists, continue posting from where the
                         left run of this program left off
+  --fps FPS             The fps of the GIFs
+  --width WIDTH         The width of GIFs in pixels. Set to -1 to autoscale
+  --height HEIGHT       The height of GIFs in pixels. Set to -1 to autoscale
   --ffmpeg FFMPEG, -f FFMPEG
                         The full path to ffmpeg binary (optional, if not
                         already in $PATH)
+```
